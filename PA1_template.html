@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="author" content="Joshua Waxman" />
+
+
+<title>Activity Monitoring Assignment</title>
+
+<script src="PA1_template_files/jquery-1.11.0/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link href="PA1_template_files/bootstrap-2.3.2/css/bootstrap.min.css" rel="stylesheet" />
+<link href="PA1_template_files/bootstrap-2.3.2/css/bootstrap-responsive.min.css" rel="stylesheet" />
+<script src="PA1_template_files/bootstrap-2.3.2/js/bootstrap.min.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<link rel="stylesheet"
+      href="PA1_template_files/highlight/default.css"
+      type="text/css" />
+<script src="PA1_template_files/highlight/highlight.js"></script>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+<div class="container-fluid main-container">
+
+
+<div id="header">
+<h1 class="title">Activity Monitoring Assignment</h1>
+<h4 class="author"><em>Joshua Waxman</em></h4>
+<h4 class="date"><em>Monday, December 08, 2014</em></h4>
+</div>
+
+
+<p>Required Libraries:</p>
+<pre class="r"><code>date &lt;- date()
+library(dplyr)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;dplyr&#39;
+## 
+## The following object is masked from &#39;package:stats&#39;:
+## 
+##     filter
+## 
+## The following objects are masked from &#39;package:base&#39;:
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code>library(lattice)</code></pre>
+<div id="loading-and-preprocessing-the-data" class="section level2">
+<h2>Loading and preprocessing the data</h2>
+<p>We begin by acquiring the dataset for the Activity Monitoring assignment. The data were acquired at approximately Fri Dec 12 06:22:58 2014 from the following website</p>
+<p><a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip">https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip</a></p>
+<p>unzip it, and then read using the following code:</p>
+<pre class="r"><code>download.file(url = &quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip&quot;, destfile = &quot;activity.zip&quot;, method = &quot;curl&quot;)</code></pre>
+<pre><code>## Warning: running command &#39;curl
+## &quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip&quot; -o
+## &quot;activity.zip&quot;&#39; had status 127</code></pre>
+<pre><code>## Warning in download.file(url =
+## &quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip&quot;, :
+## download had nonzero exit status</code></pre>
+<pre class="r"><code>unzip(&quot;activity.zip&quot;)
+df &lt;- read.csv(&quot;activity.csv&quot;)</code></pre>
+<p>The data look like this:</p>
+<pre class="r"><code>head(df)</code></pre>
+<pre><code>##   steps       date interval
+## 1    NA 2012-10-01        0
+## 2    NA 2012-10-01        5
+## 3    NA 2012-10-01       10
+## 4    NA 2012-10-01       15
+## 5    NA 2012-10-01       20
+## 6    NA 2012-10-01       25</code></pre>
+<pre class="r"><code>tail(df)</code></pre>
+<pre><code>##       steps       date interval
+## 17563    NA 2012-11-30     2330
+## 17564    NA 2012-11-30     2335
+## 17565    NA 2012-11-30     2340
+## 17566    NA 2012-11-30     2345
+## 17567    NA 2012-11-30     2350
+## 17568    NA 2012-11-30     2355</code></pre>
+</div>
+<div id="what-is-mean-total-number-of-steps-taken-per-day" class="section level2">
+<h2>What is mean total number of steps taken per day?</h2>
+<p>First, let us generate a histogram of the number of steps taken each day.</p>
+<pre class="r"><code>steps_by_date &lt;- df %&gt;% group_by(date) %&gt;% summarise(count_steps = sum(steps, na.rm=TRUE))
+hist(steps_by_date$count_steps, xlab = &quot;total steps&quot;, main=&quot;Histogram of average daily steps (NAs present)&quot;)</code></pre>
+<p><img src="PA1_template_files/figure-html/unnamed-chunk-4-1.png" /></p>
+<p>We then calculate the mean and median total number of steps per day.</p>
+<pre class="r"><code>theMean &lt;- mean(steps_by_date$count_steps, na.rm = TRUE)
+theMedian &lt;- median(steps_by_date$count_steps, na.rm = TRUE)</code></pre>
+<p>The mean total number of steps per day is 9354.2295082 and the median total number of steps per day is 10395.</p>
+</div>
+<div id="what-is-the-average-daily-activity-pattern" class="section level2">
+<h2>What is the average daily activity pattern?</h2>
+<p>Next, we construct a time-series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis).</p>
+<pre class="r"><code>steps_by_interval &lt;- df %&gt;% group_by(interval) %&gt;% summarise(avg_steps=mean(steps, na.rm = TRUE))
+with(steps_by_interval, plot(x=interval, y=avg_steps, type=&quot;l&quot;, main=&quot;Time series -- average steps (across all days)\n taken at each 5 minute interval&quot;))</code></pre>
+<p><img src="PA1_template_files/figure-html/unnamed-chunk-6-1.png" /></p>
+<pre class="r"><code>max_position &lt;- which(steps_by_interval$avg_steps == max(steps_by_interval$avg_steps) )
+max_interval &lt;- steps_by_interval$interval[max_position]</code></pre>
+<p>Also, the 5-minute interval, on average across all the days in the dataset, which contains the maximum number of steps is this one: 835</p>
+</div>
+<div id="imputing-missing-values" class="section level2">
+<h2>Imputing missing values</h2>
+<p>We note that there are a number of days/intervals where there are missing values (coded as NA). Since the presence of missing days may introduce bias into some calculations or summaries of the data, we shall take some steps to address this.</p>
+<p>First, we shall calculate and report the total number of missing values in the dataset.</p>
+<p>There are not any NAs in the date or interval columns, but only the steps column, because we specify the date and interval, and only the number of steps for that time period might or might not exist.</p>
+<p>We can calculate the number of NA values as follows:</p>
+<pre class="r"><code>num_nas &lt;- length(df$steps[is.na(df$steps)])
+print(num_nas)</code></pre>
+<pre><code>## [1] 2304</code></pre>
+<p>Next, we shall devise a strategy for filling in all of the missing values in the dataset. The simple strategy we adopt is, when encountering an NA, to assign the mean across all days for that particular five minute interval.</p>
+<p>We do this by finding which rows in the df data frame contain NA and then, for each such row, looking up the mean in the steps_by_interval data frame. We assign those back to the NA rows in the df data frame.</p>
+<pre class="r"><code>missing_steps &lt;- which(is.na(df$steps))
+intervals_of_missing_steps &lt;- df[missing_steps, ]$interval
+positions &lt;- which(steps_by_interval$interval == intervals_of_missing_steps)
+df_imputed &lt;- df
+df_imputed[missing_steps, ]$steps &lt;- steps_by_interval[positions, ]$avg_steps</code></pre>
+<p>We now repeat the histogram, median, and mean, this time with the NA filled in.</p>
+<pre class="r"><code>steps_by_date_imputed &lt;- df_imputed %&gt;% group_by(date) %&gt;% summarise(count_steps = sum(steps, na.rm=TRUE))
+hist(steps_by_date_imputed$count_steps, xlab = &quot;total steps&quot;, main=&quot;Histogram of average daily steps (NAs replaced)&quot;)</code></pre>
+<p><img src="PA1_template_files/figure-html/unnamed-chunk-9-1.png" /></p>
+<p>See how the first two bars of this histogram are level with each other, while in the previous histogram the first bar was slightly higher than the second.</p>
+<p>We once again calculate the mean and median total number of steps per day.</p>
+<pre class="r"><code>theMeanImputed &lt;- mean(steps_by_date_imputed$count_steps, na.rm = TRUE)
+theMedianImputed &lt;- median(steps_by_date_imputed$count_steps, na.rm = TRUE)</code></pre>
+<p>The mean total number of steps per day (replacing NAs) is 9530.72, which is slightly larger than from 9354.23. The median total number of steps per day is 10439 which is slightly larger than 10395.</p>
+<p>Thus, the impact of imputing missing data on the estimates of the total daily number of steps is to slightly raise those estimates.</p>
+</div>
+<div id="are-there-differences-in-activity-patterns-between-weekdays-and-weekends" class="section level2">
+<h2>Are there differences in activity patterns between weekdays and weekends?</h2>
+<p>We now add a factor variable to our imputed data frame, to track whether it is a weekday or weekend day. We decide to define the weekend as Saturday and Sunday.</p>
+<p>Then we plot a new time series – average steps (across all days) taken at each 5 minute interval, for weekends and weekdays:</p>
+<pre class="r"><code>day_of_week &lt;- weekdays(as.Date(df_imputed$date))
+df_imputed$day = rep(&quot;weekday&quot;, nrow(df_imputed))
+df_imputed$day[day_of_week %in% c(&quot;Saturday&quot;, &quot;Sunday&quot;)] = &quot;weekend&quot;
+df_imputed$day &lt;- factor(df_imputed$day)
+
+df_imputed_grouped &lt;- group_by(df_imputed, day, interval)
+steps_by_interval_imputed &lt;- summarize(df_imputed_grouped, avg_steps=mean(steps))
+
+xyplot(avg_steps ~ interval | day , data=steps_by_interval_imputed, type=&quot;l&quot;, layout=c(1, 2))</code></pre>
+<p><img src="PA1_template_files/figure-html/unnamed-chunk-11-1.png" /></p>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
